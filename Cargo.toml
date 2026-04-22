@@ -54,6 +54,30 @@ enable_env_functions = []
 enable_system_functions = ["dep:relative-path"]
 enable_network_functions = ["dep:reqwest", "dep:reqwest-middleware", "dep:reqwest-retry"]
 
+# Enables cryptographic functions: hashing (MD5, SHA, xxHash, etc.), encryption (AES, ChaCha20, etc.), and MACs.
+enable_crypto_functions = [
+  "dep:aes",
+  "dep:aes-siv",
+  "dep:cbc",
+  "dep:cfb-mode",
+  "dep:chacha20poly1305",
+  "dep:crypto_secretbox",
+  "dep:ctr",
+  "dep:digest",
+  "dep:hex",
+  "dep:hmac",
+  "dep:ipcrypt-rs",
+  "dep:md-5",
+  "dep:ofb",
+  "dep:seahash",
+  "dep:sha-1",
+  "dep:sha-2",
+  "dep:sha-3",
+  "dep:xxhash-rust",
+  "dep:crc",
+  "dep:block-modes",
+]
+
 # Testing Utilities. Enables additional tests, including those with external dependencies such as network calls.
 test = ["string_path"]
 
@@ -239,6 +263,7 @@ ctr = { version = "0.9", optional = true }
 cbc = { version = "0.1", optional = true, features = ["alloc"] }
 cfb-mode = { version = "0.8", optional = true }
 ofb = { version = "0.6", optional = true }
+block-modes = { version = "0.9.1", optional = true }
 
 # Protobuf support.
 prost = { version = "0.13", default-features = false, optional = true, features = ["std"] }

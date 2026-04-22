@@ -10,10 +10,15 @@ use chacha20poly1305::{ChaCha20Poly1305, KeyInit, XChaCha20Poly1305, aead::Aead}
 use crypto_secretbox::XSalsa20Poly1305;
 use ctr::{Ctr64BE, Ctr64LE};
 use ofb::Ofb;
+use block_modes::Ecb;
 
 type Aes128Cbc = cbc::Encryptor<aes::Aes128>;
 type Aes192Cbc = cbc::Encryptor<aes::Aes192>;
 type Aes256Cbc = cbc::Encryptor<aes::Aes256>;
+
+type Aes128Ecb = Ecb<aes::Aes128, Pkcs7>;
+type Aes192Ecb = Ecb<aes::Aes192, Pkcs7>;
+type Aes256Ecb = Ecb<aes::Aes256, Pkcs7>;
 
 pub(crate) fn get_key_bytes<const N: usize>(key: Value) -> ExpressionResult<[u8; N]> {
     let bytes = key.try_bytes()?;
@@ -65,6 +70,14 @@ macro_rules! encrypt_padded {
             &GenericArray::from(get_iv_bytes($iv)?),
         )
         .encrypt_padded_vec_mut::<$padding>($plaintext.as_ref())
+    }};
+}
+
+macro_rules! encrypt_ecb_padded {
+    ($algorithm:ty, $padding:ty, $plaintext:expr_2021, $key:expr_2021, $iv:expr_2021) => {{
+        let key_bytes = get_key_bytes($key)?;
+        <$algorithm>::new(&GenericArray::from(key_bytes))
+            .encrypt_padded_vec_mut::<$padding>($plaintext.as_ref())
     }};
 }
 
@@ -124,6 +137,9 @@ pub(crate) fn is_valid_algorithm(algorithm: &str) -> bool {
             | "CHACHA20-POLY1305"
             | "XCHACHA20-POLY1305"
             | "XSALSA20-POLY1305"
+            | "AES-128-ECB-PKCS7"
+            | "AES-192-ECB-PKCS7"
+            | "AES-256-ECB-PKCS7"
     )
 }
 
@@ -165,6 +181,9 @@ fn encrypt(plaintext: Value, algorithm: &str, key: Value, iv: Value) -> Resolved
         "CHACHA20-POLY1305" => encrypt_stream!(ChaCha20Poly1305, plaintext, key, iv),
         "XCHACHA20-POLY1305" => encrypt_stream!(XChaCha20Poly1305, plaintext, key, iv),
         "XSALSA20-POLY1305" => encrypt_stream!(XSalsa20Poly1305, plaintext, key, iv),
+        "AES-128-ECB-PKCS7" => encrypt_ecb_padded!(Aes128Ecb, Pkcs7, plaintext, key, iv),
+        "AES-192-ECB-PKCS7" => encrypt_ecb_padded!(Aes192Ecb, Pkcs7, plaintext, key, iv),
+        "AES-256-ECB-PKCS7" => encrypt_ecb_padded!(Aes256Ecb, Pkcs7, plaintext, key, iv),
         other => return Err(format!("Invalid algorithm: {other}").into()),
     };
 
@@ -217,6 +236,9 @@ impl Function for Encrypt {
             * CHACHA20-POLY1305 (key = 32 bytes, iv = 12 bytes)
             * XCHACHA20-POLY1305 (key = 32 bytes, iv = 24 bytes)
             * XSALSA20-POLY1305 (key = 32 bytes, iv = 24 bytes)
+            * AES-128-ECB-PKCS7 (key = 16 bytes, iv = 24 bytes)
+            * AES-192-ECB-PKCS7 (key = 24 bytes, iv = 24 bytes)
+            * AES-256-ECB-PKCS7 (key = 32 bytes, iv = 24 bytes)
         "}
     }
 

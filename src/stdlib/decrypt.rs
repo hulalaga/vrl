@@ -11,12 +11,17 @@ use chacha20poly1305::{ChaCha20Poly1305, KeyInit, XChaCha20Poly1305, aead::Aead}
 use crypto_secretbox::XSalsa20Poly1305;
 use ctr::{Ctr64BE, Ctr64LE};
 use ofb::Ofb;
+use block_modes::Ecb;
 
 use super::encrypt::{get_iv_bytes, get_key_bytes, is_valid_algorithm};
 
 type Aes128Cbc = cbc::Decryptor<aes::Aes128>;
 type Aes192Cbc = cbc::Decryptor<aes::Aes192>;
 type Aes256Cbc = cbc::Decryptor<aes::Aes256>;
+
+type Aes128EcbPkcs7 = Ecb<aes::Aes128, Pkcs7>;
+type Aes192EcbPkcs7 = Ecb<aes::Aes192, Pkcs7>;
+type Aes256EcbPkcs7 = Ecb<aes::Aes256, Pkcs7>;
 
 macro_rules! decrypt {
     ($algorithm:ty, $ciphertext:expr_2021, $key:expr_2021, $iv:expr_2021) => {{
@@ -39,6 +44,15 @@ macro_rules! decrypt_padded {
         )
         .decrypt_padded_vec_mut::<$padding>($ciphertext.as_ref())
         .map_err(|_| format!("Invalid input"))?
+    }};
+}
+
+macro_rules! decrypt_ecb_padded {
+    ($algorithm:ty, $padding:ty, $ciphertext:expr_2021, $key:expr_2021, $iv:expr_2021) => {{
+        let key_bytes = get_key_bytes($key)?;
+        <$algorithm>::new(&GenericArray::from(key_bytes))
+            .decrypt_padded_vec_mut::<$padding>($ciphertext.as_ref())
+            .map_err(|_| format!("Invalid input or padding"))?
     }};
 }
 
@@ -102,6 +116,9 @@ fn decrypt(ciphertext: Value, algorithm: &str, key: Value, iv: Value) -> Resolve
         "CHACHA20-POLY1305" => decrypt_stream!(ChaCha20Poly1305, ciphertext, key, iv),
         "XCHACHA20-POLY1305" => decrypt_stream!(XChaCha20Poly1305, ciphertext, key, iv),
         "XSALSA20-POLY1305" => decrypt_stream!(XSalsa20Poly1305, ciphertext, key, iv),
+        "AES-128-ECB-PKCS7" => decrypt_ecb_padded!(Aes128EcbPkcs7, Pkcs7, ciphertext, key, iv),
+        "AES-192-ECB-PKCS7" => decrypt_ecb_padded!(Aes192EcbPkcs7, Pkcs7, ciphertext, key, iv),
+        "AES-256-ECB-PKCS7" => decrypt_ecb_padded!(Aes256EcbPkcs7, Pkcs7, ciphertext, key, iv),
         other => return Err(format!("Invalid algorithm: {other}").into()),
     };
 
@@ -154,6 +171,9 @@ impl Function for Decrypt {
             * CHACHA20-POLY1305 (key = 32 bytes, iv = 12 bytes)
             * XCHACHA20-POLY1305 (key = 32 bytes, iv = 24 bytes)
             * XSALSA20-POLY1305 (key = 32 bytes, iv = 24 bytes)
+            * AES-128-ECB-PKCS7 (key = 16 bytes, iv = 24 bytes)
+            * AES-192-ECB-PKCS7 (key = 24 bytes, iv = 24 bytes)
+            * AES-256-ECB-PKCS7 (key = 32 bytes, iv = 24 bytes)
         "}
     }
 

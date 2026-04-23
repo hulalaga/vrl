@@ -158,7 +158,8 @@ stdlib-base = [
   "dep:woothee",
   "dep:xxhash-rust",
   "dep:zstd",
-  "dep:encoding_rs"
+  "dep:encoding_rs",
+  "dep:block-modes",
 ]
 
 [dependencies]

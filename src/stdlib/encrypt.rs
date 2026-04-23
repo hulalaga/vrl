@@ -64,9 +64,11 @@ macro_rules! encrypt {
 
 macro_rules! encrypt_padded {
     ($algorithm:ty, $padding:ty, $plaintext:expr_2021, $key:expr_2021, $iv:expr_2021) => {{
-        let key_bytes = get_key_bytes($key)?;
-        let cipher = <$algorithm>::new(&GenericArray::from(key_bytes));
-        cipher.encrypt_padded_vec_mut::<$padding>($plaintext.as_ref())
+        <$algorithm>::new(
+            &GenericArray::from(get_key_bytes($key)?),
+            &GenericArray::from(get_iv_bytes($iv)?),
+        )
+        .encrypt_padded_vec_mut::<$padding>($plaintext.as_ref())
     }};
 }
 

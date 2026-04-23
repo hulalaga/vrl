@@ -10,17 +10,14 @@ use chacha20poly1305::{ChaCha20Poly1305, KeyInit, XChaCha20Poly1305, aead::Aead}
 use crypto_secretbox::XSalsa20Poly1305;
 use ctr::{Ctr64BE, Ctr64LE};
 use ofb::Ofb;
-use ecb::Ecb;
-use aes::Aes128, Aes192, Aes256;
-use cipher::{BlockEncryptMut, KeyInit, block_padding::Pkcs7};
 
 type Aes128Cbc = cbc::Encryptor<aes::Aes128>;
 type Aes192Cbc = cbc::Encryptor<aes::Aes192>;
 type Aes256Cbc = cbc::Encryptor<aes::Aes256>;
 
-type Aes128Ecb = Ecb<Aes128>;
-type Aes192Ecb = Ecb<Aes192>;
-type Aes256Ecb = Ecb<Aes256>;
+type Aes128Ecb = ecb::Encryptor<aes::Aes128>;
+type Aes192Ecb = ecb::Encryptor<aes::Aes192>;
+type Aes256Ecb = ecb::Encryptor<aes::Aes256>;
 
 pub(crate) fn get_key_bytes<const N: usize>(key: Value) -> ExpressionResult<[u8; N]> {
     let bytes = key.try_bytes()?;
@@ -76,8 +73,8 @@ macro_rules! encrypt_padded {
 macro_rules! encrypt_ecb_padded {
     ($algorithm:ty, $padding:ty, $plaintext:expr_2021, $key:expr_2021, $iv:expr_2021) => {{
         let key_bytes = get_key_bytes($key)?;
-        <$algorithm>::new(&GenericArray::from(key_bytes))
-            .encrypt_padded_vec_mut::<$padding>($plaintext.as_ref())
+        let cipher = <$algorithm>::new(&GenericArray::from(key_bytes));
+        cipher.encrypt_padded_vec_mut::<$padding>($plaintext.as_ref())
     }};
 }
 

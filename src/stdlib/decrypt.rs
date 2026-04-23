@@ -11,8 +11,6 @@ use chacha20poly1305::{ChaCha20Poly1305, KeyInit, XChaCha20Poly1305, aead::Aead}
 use crypto_secretbox::XSalsa20Poly1305;
 use ctr::{Ctr64BE, Ctr64LE};
 use ofb::Ofb;
-use ecb::Ecb;
-use cipher::{BlockDecryptMut, KeyInit, block_padding::Pkcs7};
 
 use super::encrypt::{get_iv_bytes, get_key_bytes, is_valid_algorithm};
 
@@ -20,9 +18,9 @@ type Aes128Cbc = cbc::Decryptor<aes::Aes128>;
 type Aes192Cbc = cbc::Decryptor<aes::Aes192>;
 type Aes256Cbc = cbc::Decryptor<aes::Aes256>;
 
-type Aes128Ecb = Ecb<Aes128>;
-type Aes192Ecb = Ecb<Aes192>;
-type Aes256Ecb = Ecb<Aes256>;
+type Aes128Ecb = ecb::Decryptor<aes::Aes128>;
+type Aes192Ecb = ecb::Decryptor<aes::Aes192>;
+type Aes256Ecb = ecb::Decryptor<aes::Aes256>;
 
 macro_rules! decrypt {
     ($algorithm:ty, $ciphertext:expr_2021, $key:expr_2021, $iv:expr_2021) => {{
@@ -49,7 +47,7 @@ macro_rules! decrypt_padded {
 }
 
 macro_rules! decrypt_ecb_padded {
-    ($algorithm:ty, $padding:ty, $ciphertext:expr_2021, $key:expr_2021,  $iv:expr_2021) => {{
+    ($algorithm:ty, $padding:ty, $ciphertext:expr_2021, $key:expr_2021, $iv:expr_2021) => {{
         let key_bytes = get_key_bytes($key)?;
         let cipher = <$algorithm>::new(&GenericArray::from(key_bytes));
         cipher.decrypt_padded_vec_mut::<$padding>($ciphertext.as_ref())
